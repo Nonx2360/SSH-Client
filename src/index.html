@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sakura SSH — Anime Terminal</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- xterm.js CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.9.0/lib/xterm-addon-web-links.js"></script>
+</head>
+<body>
+  <!-- Sakura Particles Canvas -->
+  <canvas id="particles-canvas"></canvas>
+
+  <!-- Background overlay -->
+  <div id="bg-overlay"></div>
+
+  <!-- ── TITLE BAR ───────────────────────────────────── -->
+  <div id="titlebar">
+    <div id="titlebar-logo">
+      <span class="logo-sakura">🌸</span>
+      <span class="logo-text">Sakura SSH</span>
+    </div>
+    <div id="titlebar-drag"></div>
+    <div id="titlebar-controls">
+      <button id="btn-minimize" class="titlebar-btn" onclick="window.api.window.minimize()">
+        <svg width="12" height="12" viewBox="0 0 12 12"><rect x="0" y="5" width="12" height="2" fill="currentColor"/></svg>
+      </button>
+      <button id="btn-maximize" class="titlebar-btn" onclick="window.api.window.maximize()">
+        <svg width="12" height="12" viewBox="0 0 12 12"><rect x="1" y="1" width="10" height="10" stroke="currentColor" stroke-width="1.5" fill="none" rx="1"/></svg>
+      </button>
+      <button id="btn-close" class="titlebar-btn close" onclick="window.api.window.close()">
+        <svg width="12" height="12" viewBox="0 0 12 12"><line x1="1" y1="1" x2="11" y2="11" stroke="currentColor" stroke-width="1.5"/><line x1="11" y1="1" x2="1" y2="11" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── MAIN LAYOUT ─────────────────────────────────── -->
+  <div id="app-layout">
+
+    <!-- ── SIDEBAR ──────────────────────────────────── -->
+    <aside id="sidebar">
+      <div id="sidebar-header">
+        <span class="sidebar-title">Profiles</span>
+        <button id="btn-add-profile" class="icon-btn" title="New Profile">
+          <svg width="16" height="16" viewBox="0 0 16 16"><line x1="8" y1="2" x2="8" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="2" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <div id="search-wrap">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 16 16"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.5" fill="none"/><line x1="10" y1="10" x2="14" y2="14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input type="text" id="search-profiles" placeholder="Search profiles…" />
+      </div>
+
+      <div id="profiles-list">
+        <!-- dynamically populated -->
+        <div class="empty-state" id="profiles-empty">
+          <span>🌸</span>
+          <p>No profiles yet</p>
+          <small>Click + to add a server</small>
+        </div>
+      </div>
+
+      <div id="sidebar-footer">
+        <button id="btn-settings" class="icon-btn" title="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+          <span>Settings</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ── MAIN PANEL ──────────────────────────────── -->
+    <main id="main-panel">
+
+      <!-- Tab bar -->
+      <div id="tab-bar">
+        <div id="tabs-container">
+          <!-- dynamically populated -->
+        </div>
+        <div id="tab-bar-right">
+          <!-- sftp toggle button appears per tab -->
+        </div>
+      </div>
+
+      <!-- Welcome screen (shown when no tabs open) -->
+      <div id="welcome-screen">
+        <div class="welcome-content">
+          <div class="welcome-sakura">🌸</div>
+          <h1>Sakura SSH</h1>
+          <p>Your beautiful anime-themed SSH client</p>
+          <div class="welcome-hints">
+            <div class="hint-card">
+              <span class="hint-icon">📡</span>
+              <span>Select a profile to connect</span>
+            </div>
+            <div class="hint-card">
+              <span class="hint-icon">➕</span>
+              <span>Click + to add a new server</span>
+            </div>
+            <div class="hint-card">
+              <span class="hint-icon">📁</span>
+              <span>Use SFTP to manage files</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabs content area -->
+      <div id="tabs-content">
+        <!-- Terminal + SFTP panels dynamically inserted here -->
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!-- MODAL: Add / Edit Profile                        -->
+  <!-- ════════════════════════════════════════════════ -->
+  <div id="modal-profile" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2 id="modal-profile-title">New Profile</h2>
+        <button class="modal-close" id="btn-close-profile-modal">✕</button>
+      </div>
+      <form id="form-profile" autocomplete="off">
+        <input type="hidden" id="profile-id" />
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Profile Name</label>
+            <input type="text" id="profile-name" placeholder="My Server" required />
+          </div>
+          <div class="form-group form-group-sm">
+            <label>Color Tag</label>
+            <input type="color" id="profile-color" value="#FF9ECD" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group form-group-lg">
+            <label>Hostname / IP</label>
+            <input type="text" id="profile-host" placeholder="192.168.1.1 or example.com" required />
+          </div>
+          <div class="form-group form-group-sm">
+            <label>Port</label>
+            <input type="number" id="profile-port" placeholder="22" value="22" min="1" max="65535" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="profile-username" placeholder="root" required />
+        </div>
+
+        <!-- Auth type toggle -->
+        <div class="form-group">
+          <label>Authentication</label>
+          <div class="auth-toggle">
+            <button type="button" class="auth-btn active" id="auth-password-btn" onclick="setAuthType('password')">
+              🔑 Password
+            </button>
+            <button type="button" class="auth-btn" id="auth-key-btn" onclick="setAuthType('key')">
+              🗝️ SSH Key
+            </button>
+          </div>
+        </div>
+
+        <div id="auth-password-section">
+          <div class="form-group">
+            <label>Password</label>
+            <div class="input-with-icon">
+              <input type="password" id="profile-password" placeholder="••••••••" />
+              <button type="button" class="toggle-pwd" onclick="togglePassword('profile-password', this)">👁</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="auth-key-section" class="hidden">
+          <div class="form-group">
+            <label>Private Key File</label>
+            <div class="input-with-btn">
+              <input type="text" id="profile-keypath" placeholder="Path to .pem file" readonly />
+              <button type="button" id="btn-browse-key" class="browse-btn">Browse…</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Key Passphrase (optional)</label>
+            <div class="input-with-icon">
+              <input type="password" id="profile-passphrase" placeholder="Leave empty if none" />
+              <button type="button" class="toggle-pwd" onclick="togglePassword('profile-passphrase', this)">👁</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Notes (optional)</label>
+          <textarea id="profile-notes" placeholder="Any notes about this server…" rows="2"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" id="btn-cancel-profile">Cancel</button>
+          <button type="submit" class="btn-primary">
+            <span id="save-btn-icon">💾</span>
+            <span id="save-btn-text">Save Profile</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!-- MODAL: Settings                                  -->
+  <!-- ════════════════════════════════════════════════ -->
+  <div id="modal-settings" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>⚙️ Settings</h2>
+        <button class="modal-close" id="btn-close-settings-modal">✕</button>
+      </div>
+
+      <div class="settings-section">
+        <h3>🖼️ Background</h3>
+        <div class="bg-preview-wrap">
+          <div id="bg-preview-box">
+            <span id="bg-preview-placeholder">No image selected</span>
+            <img id="bg-preview-img" class="hidden" alt="background preview" />
+          </div>
+          <div class="bg-buttons">
+            <button id="btn-upload-bg" class="btn-primary">Upload Image</button>
+            <button id="btn-clear-bg" class="btn-secondary">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🌸 Particles</h3>
+        <label class="toggle-label">
+          <span>Sakura Particles</span>
+          <label class="switch">
+            <input type="checkbox" id="toggle-particles" checked />
+            <span class="slider"></span>
+          </label>
+        </label>
+      </div>
+
+      <div class="settings-section">
+        <h3>🔠 Terminal Font Size</h3>
+        <div class="slider-row">
+          <input type="range" id="font-size-slider" min="10" max="24" value="14" />
+          <span id="font-size-value">14px</span>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>🎨 Accent Color</h3>
+        <div class="color-presets">
+          <button class="color-preset" style="--c:#FF9ECD" data-color="#FF9ECD" title="Sakura Pink"></button>
+          <button class="color-preset" style="--c:#C3B1E1" data-color="#C3B1E1" title="Lavender"></button>
+          <button class="color-preset" style="--c:#00D4FF" data-color="#00D4FF" title="Cyan"></button>
+          <button class="color-preset" style="--c:#FFE66D" data-color="#FFE66D" title="Gold"></button>
+          <button class="color-preset" style="--c:#A8FF78" data-color="#A8FF78" title="Mint"></button>
+          <button class="color-preset" style="--c:#FF6B6B" data-color="#FF6B6B" title="Coral"></button>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="btn-cancel-settings">Cancel</button>
+        <button type="button" class="btn-primary" id="btn-save-settings">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════ -->
+  <!-- Context Menu                                     -->
+  <!-- ════════════════════════════════════════════════ -->
+  <div id="context-menu" class="hidden">
+    <button id="ctx-connect">🌸 Connect</button>
+    <button id="ctx-edit">✏️ Edit</button>
+    <button id="ctx-duplicate">📋 Duplicate</button>
+    <hr />
+    <button id="ctx-delete" class="danger">🗑️ Delete</button>
+  </div>
+
+  <!-- Toast notification -->
+  <div id="toast" class="hidden"></div>
+
+  <!-- Scripts -->
+  <script src="profiles.js"></script>
+  <script src="terminal.js"></script>
+  <script src="sftp.js"></script>
+  <script src="settings.js"></script>
+  <script src="renderer.js"></script>
+</body>
+</html>
