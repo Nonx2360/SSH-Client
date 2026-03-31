@@ -12,6 +12,7 @@ A beautiful, anime-themed desktop SSH client built with **Electron.js**. Featuri
 - **💻 Multi-Tab Terminal**: Manage multiple sessions at once with ease.
 - **📁 Integrated SFTP**: Seamlessly browse, download, and upload files.
 - **🗝️ SSH Key Support**: Authenticate using private keys (PEM, OpenSSH) with passphrase protection.
+- **🎮 Discord Rich Presence**: Automatically shows your SSH activity in Discord status.
 - **🖥️ Cross-Platform**: Runs on Windows, macOS, and Linux.
 
 ## 🚀 Getting Started

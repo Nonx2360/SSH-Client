@@ -7,10 +7,16 @@
     "start": "electron .",
     "dev": "electron . --dev"
   },
-  "keywords": ["ssh", "electron", "terminal", "sftp"],
+  "keywords": [
+    "ssh",
+    "electron",
+    "terminal",
+    "sftp"
+  ],
   "author": "Sakura SSH",
   "license": "MIT",
   "dependencies": {
+    "discord-rpc": "^4.0.1",
     "electron-store": "^8.1.0",
     "ssh2": "^1.15.0"
   },

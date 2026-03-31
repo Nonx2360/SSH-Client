@@ -4,6 +4,7 @@ const fs = require('fs');
 const { Client } = require('ssh2');
 const Store = require('electron-store');
 const crypto = require('crypto');
+const DiscordRPC = require('discord-rpc');
 
 // ─── Encryption helpers ───────────────────────────────────────────────────────
 // Derive a 32-byte key via SHA-256 so length is always correct
@@ -50,7 +51,65 @@ const store = new Store({
 });
 
 // ─── Active SSH sessions ───────────────────────────────────────────────────────
-const sessions = {}; // tabId -> { client, stream }
+const sessions = {}; // tabId -> { client, stream, host }
+
+// ─── Discord RPC ──────────────────────────────────────────────────────────────
+// To enable: create an application at https://discord.com/developers/applications
+// then replace the CLIENT_ID below with your own Application ID.
+const DISCORD_CLIENT_ID = '1356616178261393459';
+let rpc = null;
+let rpcReady = false;
+const rpcStartTime = Date.now();
+
+function initDiscordRPC() {
+  try {
+    DiscordRPC.register(DISCORD_CLIENT_ID);
+    rpc = new DiscordRPC.Client({ transport: 'ipc' });
+
+    rpc.on('ready', () => {
+      rpcReady = true;
+      console.log('[Discord RPC] Connected as', rpc.user.username);
+      updatePresence();
+    });
+
+    rpc.login({ clientId: DISCORD_CLIENT_ID }).catch(err => {
+      console.warn('[Discord RPC] Login failed (Discord may not be running):', err.message);
+    });
+  } catch (err) {
+    console.warn('[Discord RPC] Init failed:', err.message);
+  }
+}
+
+function updatePresence() {
+  if (!rpc || !rpcReady) return;
+  const sessionCount = Object.keys(sessions).length;
+  const hosts = Object.values(sessions).map(s => s.host).filter(Boolean);
+
+  let details, state;
+  if (sessionCount === 0) {
+    details = '🌸 Sakura SSH Client';
+    state = 'Idle — no active sessions';
+  } else if (sessionCount === 1) {
+    details = `🔗 Connected to ${hosts[0] || 'a server'}`;
+    state = '1 active session';
+  } else {
+    details = `🔗 ${sessionCount} active sessions`;
+    state = hosts.slice(0, 3).join(', ');
+  }
+
+  rpc.setActivity({
+    details,
+    state,
+    startTimestamp: rpcStartTime,
+    largeImageKey: 'sakura',
+    largeImageText: 'Sakura SSH — Anime Terminal',
+    smallImageKey: sessionCount > 0 ? 'connected' : 'idle',
+    smallImageText: sessionCount > 0 ? `${sessionCount} session(s) open` : 'Idle',
+    instance: false,
+  }).catch(err => {
+    console.warn('[Discord RPC] setActivity failed:', err.message);
+  });
+}
 
 // ─── Window ───────────────────────────────────────────────────────────────────
 let mainWindow;
@@ -75,13 +134,20 @@ function createWindow() {
   mainWindow.loadFile(path.join(__dirname, 'src', 'index.html'));
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+  initDiscordRPC();
+});
 
 app.on('window-all-closed', () => {
   // Close all sessions
   Object.values(sessions).forEach(s => {
     try { s.stream?.end(); s.client?.end(); } catch (e) {}
   });
+  // Destroy Discord RPC gracefully
+  if (rpc) {
+    try { rpc.destroy(); } catch (e) {}
+  }
   app.quit();
 });
 
@@ -240,7 +306,10 @@ ipcMain.handle('ssh:connect', (event, { tabId, profile }) => {
         stream.on('close', () => {
           mainWindow.webContents.send(`ssh:closed:${tabId}`);
           delete sessions[tabId];
+          updatePresence(); // session closed → update RPC
         });
+        sessions[tabId].host = profile.host; // store host for RPC display
+        updatePresence(); // session opened → update RPC
         resolve({ success: true });
       });
     });
@@ -272,6 +341,7 @@ ipcMain.handle('ssh:disconnect', (_, tabId) => {
   if (session) {
     try { session.stream?.end(); session.client?.end(); } catch (e) {}
     delete sessions[tabId];
+    updatePresence(); // manual disconnect → update RPC
   }
   return true;
 });
